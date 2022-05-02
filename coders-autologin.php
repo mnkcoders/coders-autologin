@@ -116,6 +116,16 @@ final class CodersLogin {
                 self::ENDPOINT,
                 base64_encode( $token ) );
     }
+    /**
+     * @return string
+     */
+    public static final function get(){
+        if(is_admin()){
+            $action = filter_input(INPUT_GET, self::ENDPOINT);
+            return !is_null($action) ? $action : '';
+        }
+        return '';
+    }
 
 
     
@@ -141,6 +151,50 @@ final class CodersLogin {
         }
         
         return FALSE;
+    }
+    /**
+     * @param WP_User $user
+     * @return empty
+     */
+    public final function renderProfileAutoLogin(WP_User $user ){
+        if(!is_admin()){
+            return;
+        }
+        
+        $page_url = sprintf('%suser-edit.php?user_id=%s&%s=%s',
+                get_admin_url(),
+                $user->ID,
+                self::ENDPOINT,
+                'reset');
+
+        $login_url = $this->createUrl($user->user_email);
+        
+        $contents = array(
+            '<div class="coders-autologin"><hr/>',
+            sprintf('<h2>%s</h2>',__('Llaves de acceso por email','coders_autologin')),
+            sprintf('<p><input class="widefat" type="text" disabled value="%s"></p>',$login_url),
+            sprintf('<p><a class="button button-secondary" href="%s" target="_self">%s</a></p>',
+                    $page_url,
+                    __('Enviar nueva llave a mi email','coders_autologin')),
+            '<hr/></div><br/>'
+        );
+        
+        print implode('', $contents);
+    }
+    /**
+     * @param WP_User $user
+     * @return boolean
+     */
+    public final function resetProfileAutoLogin(WP_User $user ){
+        
+        if( $this->sendMail($user)){
+            //
+        }
+        else{
+            
+        }
+        
+        return false;
     }
 
     /**
@@ -177,8 +231,7 @@ final class CodersLogin {
                         }
                         break;
                     case 'test':
-                        printf('<a href="%s">Login</a>',
-                            CodersLogin::createUrl('jaume.llopis@protonmail.com'));
+                        //printf('<a href="%s">Login</a>',CodersLogin::createUrl('jaume.llopis@protonmail.com'));
                         break;
                     default:
                         break;
@@ -186,6 +239,21 @@ final class CodersLogin {
                 exit;
             }
         }, 10);
+        
+        if(is_admin()){
+            add_action( 'show_user_profile', function( $user ){
+                if( CodersLogin::instance()->get() === 'reset'){
+                    CodersLogin::instance()->resetProfileAutoLogin($user);
+                }
+                CodersLogin::instance()->renderProfileAutoLogin($user);
+            } );
+            add_action( 'edit_user_profile', function( $user ){
+                if( CodersLogin::instance()->get() === 'reset'){
+                    CodersLogin::instance()->resetProfileAutoLogin($user);
+                }
+                CodersLogin::instance()->renderProfileAutoLogin($user);
+            } );
+        }
     }
     /**
      * @return CodersLogin
