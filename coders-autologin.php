@@ -35,6 +35,44 @@ final class CodersLogin {
     public static final function createToken( $userEmail ){
         return md5($userEmail);
     }
+    /**
+     * @param WP_User $user
+     * @return Boolean
+     */
+    private final function sendMail(WP_User $user ){
+        
+        $headers = array(
+            'Content-Type: text/html; charset=UTF-8'
+        );
+        
+        $link = $this->createUrl($user->user_email);
+        
+        $style = array(
+            'display: block;',
+            'padding: 4px 8px;',
+            'margin: 20px auto;',
+            'background-color: blue',
+            'color: white',
+            'font-weight: bold',
+            'text-transform: uppercase',
+            'border-radius: 4px',
+            'border: none'
+        );
+        
+        $message = array(
+            'Este es el acceso a tu blog',
+            sprintf('<a style="%s" href="%s" target="_blank">Acceder a tu cuenta aqui</a>',
+                    implode(', ', $style),
+                    $link)
+        );
+        
+        $send = wp_mail( $user->user_email,
+                __('Acceso directo WEB','coders_autologin'),
+                '<p>'. implode('</p><p>', $message) . '</p>',
+                $headers );
+        
+        return $send;
+    }
     
     /**
      * 
